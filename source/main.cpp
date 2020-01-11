@@ -2,6 +2,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include "switch.h"
+#include "led.h"
 
 u32 __nx_applet_type = AppletType_None;
 
@@ -14,7 +15,6 @@ void __libnx_initheap(void)
 	void*  addr = nx_inner_heap;
 	size_t size = nx_inner_heap_size;
 
-	// Newlib
 	extern char* fake_heap_start;
 	extern char* fake_heap_end;
 
@@ -22,17 +22,14 @@ void __libnx_initheap(void)
 	fake_heap_end   = (char*)addr + size;
 }
 
-// Init/exit services, update as needed.
 void __attribute__((weak)) __appInit(void)
 {
     Result rc;
 
-    // Initialize default services.
     rc = smInitialize();
     if (R_FAILED(rc))
         fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
 
-    // Enable this if you want to use HID.
     rc = hidInitialize();
     if (R_FAILED(rc))
         fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_HID));
