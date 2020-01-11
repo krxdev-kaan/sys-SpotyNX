@@ -1,0 +1,16 @@
+buildApplet/*
+buildSysmodule/*
+build/*
+*.nro
+*.kip
+*.nacp
+*.elf
+*.nsp
+*.npdm
+*.nso
+*.code-workspace
+*.flag
+*.zip
+*.xml
+*.png
+*.DS_store
