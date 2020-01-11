@@ -63,10 +63,12 @@ u64 playid = 0;
 
 int main()
 {
+    startLed(0);
 	while(true) 
 	{
 		svcSleepThread(30000000L);
 	}
+    shutdownLed();
 	Mix_CloseAudio();
     Mix_Quit();
     SDL_Quit();
