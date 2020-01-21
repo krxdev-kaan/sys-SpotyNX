@@ -5,8 +5,8 @@ extern "C"
 {
 #endif
 
-    bool Continue;
-    void playMp3(char* file);
+    void mp3MutInit();
+    void playMp3(const char* file);
 
 #ifdef __cplusplus
 }

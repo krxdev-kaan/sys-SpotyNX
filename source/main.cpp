@@ -6,16 +6,15 @@
 #include <iostream>
 #include <stdio.h>
 #include <dirent.h>
-#include "switch.h"
-#include "led.h"
-#include "mp3.h"
+#include <switch.h>
+#include "mainLoop.H"
 
 using namespace std;
 
 extern "C" {
     u32 __nx_applet_type = AppletType_None;
 
-    #define HEAP_SIZE 0x80000
+    #define HEAP_SIZE 0xA0000
     size_t nx_inner_heap_size = HEAP_SIZE;
     char   nx_inner_heap[HEAP_SIZE];
 
@@ -56,6 +55,8 @@ extern "C" {
         if (R_FAILED(rc))
             fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
 
+        //SDL_Init(SDL_INIT_AUDIO);
+
         fsdevMountSdmc();
     }
 
@@ -70,76 +71,11 @@ extern "C" {
     }
 }
 
-void initSDLAudio(void) 
-{
-    SDL_Init(SDL_INIT_AUDIO);
-    Mix_Init(MIX_INIT_FLAC | MIX_INIT_MOD | MIX_INIT_MP3 | MIX_INIT_OGG);
-    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 4096);
-}
-
-vector<string> musics = vector<string>();
-u64 playid = 0;
-
 int main()
 {
-    svcSleepThread(2e+9L);
-    //initSDLAudio();
-    /*#ifdef __APPLET__
-        consoleInit(NULL);
-    #endif*/
-
-    playMp3("/switch/tinfoil/music.mp3");
+    svcSleepThread(9e+8L);
     
-	while(appletMainLoop()) 
-	{
-        hidScanInput();
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
-
-        if (kHeld & (KEY_ZR | KEY_ZL | KEY_R | KEY_A)) 
-        {
-            startLed(2);
-
-            musics.clear();
-
-            DIR* dir = opendir("sdmc:/spoty-musics/");
-            struct dirent* ent;
-            if (dir != NULL) 
-            {
-                while ((ent = readdir(dir)))
-                {
-                   musics.push_back(ent->d_name);
-                   /*#ifdef __APPLET__
-                       printf("Music: %s\n", ent->d_name);
-                   #endif*/
-                }
-                closedir(dir);
-                startLed(0);
-            } 
-            else 
-            {
-                /*#ifdef __APPLET__
-                printf("DIRECTORY NOT FOUND");
-                #endif*/
-                startLed(3);
-            }
-        }
-
-
-
-        /*#ifdef __APPLET__
-            consoleUpdate(NULL);
-        #else*/
-            svcSleepThread(1e+7L);
-        //#endif
-	}
-
-    //shutdownLed();
-    /*#ifdef __APPLET__
-        consoleExit(NULL);
-    #endif*/
-	Mix_CloseAudio();
-    Mix_Quit();
-    SDL_Quit();
-	return 0;
+    Result rc = mainLoop();
+    
+	return rc;
 }
