@@ -30,10 +30,10 @@ void mp3MutInit()
 {
 	mutexInit(&mp3Mutex);
 
-	buffSize = 120384;
+	buffSize = 80256;
 	for (int curBuf = 0; curBuf < BUF_COUNT; curBuf++)
 	{
-		buffData[curBuf] = memalign(0x2000, buffSize);
+		buffData[curBuf] = memalign(0x1000, buffSize);
 	}
 
 	audoutInitialize();
@@ -95,7 +95,8 @@ uint64_t decodeMp3(void *buffer)
  */
 void exitMp3(void)
 {
-	memset(buffData, 0, BUF_COUNT);
+	for(int curBuf = 0; curBuf < BUF_COUNT; curBuf++)
+		memset(buffData[curBuf], 0, buffSize);
 	mpg123_close(mh);
 	mpg123_delete(mh);
 	mpg123_exit();

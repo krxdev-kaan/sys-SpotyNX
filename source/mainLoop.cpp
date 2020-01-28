@@ -45,9 +45,9 @@ Result mainLoop()
             string concatenatedDirectory = constantDir + musicName;
             playMp3(concatenatedDirectory.c_str());
             if (playid >= (musics.size() - 1)) 
-                playid++;
-            else
                 playid = 0;
+            else
+                playid++;
         }
 	}
 
