@@ -68,6 +68,7 @@ extern "C" {
         hidExit();
     	hidsysExit();
         smExit();
+        socketExit();
     }
 }
 
