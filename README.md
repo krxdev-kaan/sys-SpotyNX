@@ -9,7 +9,7 @@ Currently Heavily WIP so daily usage is not recommended.
 - Currently playing musics alphabeticly.
 
 ## How to use ?
-Install the sysmodule and then just put the songs to directory " sdmc:/spoty-musics/ " and then ZR+A to start playing the songs. Or ZR+X to Pause/Resume.
+Install the sysmodule and then just put the songs to directory " sdmc:/spoty-musics/ " and then install and use ovl-SpotyNX to start playing your favorite songs while gaming !
 
 ## What's coming up for sys-SpotyNX ?
 - Skipping the songs.
