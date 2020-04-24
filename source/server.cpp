@@ -1,97 +1,73 @@
-#include <switch.h>
-#include <cstring>
-#include <vector>
-#include <iostream>
 #include <stdio.h>
+#include <iostream>
+#include <fstream>
 #include <dirent.h>
-#include <switch.h>
-#include <sys/socket.h>
-#include <stdlib.h>
-#include <netinet/in.h>
+#include <string>
 #include <unistd.h>
-#include <stdlib.h>
-#include <arpa/inet.h>
-#include <sys/time.h>
-#include <errno.h>
-#include <netdb.h>
+#include <switch.h>
 #include "server.h"
 #include "mainLoop.h"
 
-#define PORT 78184
+using namespace std;
 
-void serverThreadFunc(void* arg) 
+SpotyIPCRamDisk mainRamDisk;
+fstream f;
+
+bool isRamOpened = false;
+
+void updateRamValues() 
 {
-    //SOCKET INITALIZATION KILLS THE SWITCH (FIND THE REASON)
-    Result rc = socketInitializeDefault();
-    if (R_FAILED(rc)) {
-        fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_AM));
-    }
-    
-    int server_fd, sock, valread;
-    struct sockaddr_in address;
-    int opt = 1;
-    int addrlen = sizeof(address);
-    
-    char buffer[128] = {0};
-    
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-    {
-        threadExit();
-        return;
-    }
-    
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons( PORT );
-    
-    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
-    {
-        threadExit();
-        return;
-    }
-    
-    if (listen(server_fd, 3) < 0)
-    {
-        threadExit();
-        return;
-    }
-    
-    if ((sock = accept(server_fd, (struct sockaddr *)&address,
-                             (socklen_t*)&addrlen))<0)
-    {
-        threadExit();
-        return;
-    }
-    
-    while (true)
-    {
-        memset(buffer, 0, 128);
-        valread = read(sock, buffer, 128);
-        
-        if(buffer[0] == '\0')
-        {
-            if ((sock = accept(server_fd, (struct sockaddr *)&address,
-                                     (socklen_t*)&addrlen))<0)
-            {
-                threadExit();
-                return;
-            }
-        }
-        else 
-        {
-            //
-            //
-            // CHECK IF BUFFER IS PLAY or PAUSE or QUEUE or SONGCHANGE or SKIP
-            //
-            //
+    f.seekp(0);
+    char c = f.get();
+    char fi = f.get();
+    mainRamDisk = {c, fi};
+}
 
-            if (buffer == "play") 
-            {
-                eventUp = true;
-            }
-        }
+void writeRamValues(int c = -1, int fi = -1) 
+{
+    if(c != -1) 
+    {
+        f.seekp(0);
+        f.put(c);
     }
+    if(fi != -1) 
+    {
+        f.seekp(1);
+        f.put(fi);
+    }
+}
+
+void setupIPC(void) 
+{
+    f.open("sdmc:/tempIPCServer/IPC/DONOTDELETE/serverSPOTY/ramActive.tmpdsk", ios::in | ios::out);
+    if (f.good()) 
+    {
+        writeRamValues(0x0, 0x0);
+        isRamOpened = true;
+    } 
+    else 
+    {
+        fatalThrow(MAKERESULT(Module_HomebrewAbi, LibnxError_InitFail_FS));
+        isRamOpened = false;
+    }
+}
+
+SpotyIPCRamDisk* retrieveIPC(void) 
+{
+    updateRamValues();
+    return &mainRamDisk;
+}
+
+void writeToIPC(int currentOP, int fileIndex) 
+{
+    if(isRamOpened) 
+    {
+        writeRamValues(currentOP, fileIndex);
+    }
+}
+
+void stopIPC(void) 
+{
+    f.close();
 }
 

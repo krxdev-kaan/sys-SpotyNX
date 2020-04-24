@@ -55,13 +55,12 @@ extern "C" {
         if (R_FAILED(rc))
             fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_FS));
 
-        //SDL_Init(SDL_INIT_AUDIO);
-
         fsdevMountSdmc();
     }
 
     void __attribute__((weak)) __appExit(void)
     {
+        smUnregisterService(smEncodeName("spotynx"));
         fsdevUnmountAll();
         fsExit();
         timeExit();

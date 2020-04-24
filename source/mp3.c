@@ -22,6 +22,7 @@ u8 *buffData[BUF_COUNT];
 int curBuf = 0;
 bool Playing = true;
 bool Break = false;
+bool Inited = false;
 #define swapbuf (curBuf = (curBuf + 1) % (BUF_COUNT))
 
 static Mutex mp3Mutex;
@@ -117,33 +118,35 @@ int fillBuf()
 	return count;
 }
 
-void checkInput() 
+void pauseOrPlay() 
 {
-		hidScanInput();
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
+	Playing = !Playing;
+}
 
-        if ((kDown & KEY_ZR || kDown & KEY_X) && (kHeld & KEY_ZR && kHeld & KEY_X))
-        {
-			Playing = !Playing;
-			for(int curBuf = 0; curBuf < BUF_COUNT/2; curBuf++)
-			fillBuf();
-        }
-
-		/* if ((kDown & KEY_ZR || kDown & KEY_B) && (kHeld & KEY_ZR && kHeld & KEY_B))
-        {
-			Break = !Break;
-        } */
+void setBreak() 
+{
+	Break = !Break;
 }
 
 void playMp3(const char *file)
 {
-	if (mutexTryLock(&mp3Mutex) == 0) 
+	if(mutexTryLock(&mp3Mutex) == 0) 
 	{
-		return;
+		setBreak();
 	}
+	mutexLock(&mp3Mutex);
 
 	initMp3(file);
+	if(!Inited) 
+	{
+		Playing = true;
+	} 
+	else 
+	{
+		Playing = false;
+		Inited = true;
+	}
+	Break = false;
 
 	u32 released_count = 0;
 	int toPlayCount = 0;
@@ -155,7 +158,11 @@ void playMp3(const char *file)
 	int lastFill = 1;
 	while (appletMainLoop() && lastFill)
 	{
-		checkInput();
+		if(!Playing) 
+		{
+			for(int curBuf = 0; curBuf < BUF_COUNT/2; curBuf++)
+			fillBuf();
+		}
 
 		if (Playing) {
 			for (int curBuf = 0; curBuf < BUF_COUNT / 2; curBuf++)
@@ -165,10 +172,10 @@ void playMp3(const char *file)
 			}
 		}
 
-		/* if (Break) 
+		if (Break) 
 		{
 			break;
-		} */
+		}
 
 		for (int curBuf = 0; curBuf < BUF_COUNT / 2 && toPlayCount--; curBuf++)
 			audoutWaitPlayFinish(&audout_released_buf, &released_count, 1000000000L);
@@ -190,7 +197,7 @@ void playMp3(const char *file)
 	while (toPlayCount--)
 		audoutWaitPlayFinish(&audout_released_buf, &released_count, 1000000000L);
 
-	//Break = false;
+	Break = false;
 
 	exitMp3();
 	mutexUnlock(&mp3Mutex);

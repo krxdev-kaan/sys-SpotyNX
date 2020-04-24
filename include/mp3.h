@@ -7,6 +7,8 @@ extern "C"
 
     void mp3MutInit();
     void playMp3(const char* file);
+    void pauseOrPlay();
+    void setBreak();
 
 #ifdef __cplusplus
 }

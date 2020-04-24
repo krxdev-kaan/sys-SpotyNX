@@ -11,17 +11,12 @@
 
 using namespace std;
 
-Thread serverThread;
-
 vector<string> musics = vector<string>();
 u64 playid = 0;
 
-bool eventUp = false;
-
 Result mainLoop() 
 {
-    Result rc;
-    rc = threadCreate(&serverThread, serverThreadFunc, NULL, NULL, 0x800, 0x2C, -2);
+    setupIPC();
     mp3MutInit();
 
             musics.clear();
@@ -37,32 +32,39 @@ Result mainLoop()
                 closedir(dir);
             }
 
-    //rc = threadStart(&serverThread); 
-
+    string temp = "sdmc:/spoty-musics/";
+    string tempName = musics[playid];
+    string tempDir = temp + tempName;
+    playMp3(tempDir.c_str());
+            
     while(appletMainLoop()) 
 	{
         svcSleepThread(1e+7L);
+        SpotyIPCRamDisk* activeDisk = retrieveIPC();
 
-        hidScanInput();
-        u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        u64 kHeld = hidKeysHeld(CONTROLLER_P1_AUTO);
-
-        if(kDown == KEY_MINUS) 
+        if(activeDisk->currentOperation == 1)
         {
-            rc = threadStart(&serverThread); 
-        }
-
-        if (eventUp) 
+            pauseOrPlay();
+            writeToIPC(0x0, activeDisk->fileIndex);
+        } 
+        else if (activeDisk->currentOperation == 2) 
         {
             string constantDir = "sdmc:/spoty-musics/";
-            string musicName = musics[playid];
+            string musicName = musics[++playid];
             string concatenatedDirectory = constantDir + musicName;
             playMp3(concatenatedDirectory.c_str());
-            if (playid >= (musics.size() - 1)) 
-                playid = 0;
-            else
-                playid++;
-            eventUp = false;
+            writeToIPC(0x0, activeDisk->fileIndex >= musics.size() ? 0x0 : activeDisk->fileIndex + 0x1);
+        }
+        else if (activeDisk->currentOperation == 3) 
+        {
+            string constantDir = "sdmc:/spoty-musics/";
+            string musicName = musics[--playid];
+            string concatenatedDirectory = constantDir + musicName;
+            playMp3(concatenatedDirectory.c_str());
+            writeToIPC(0x0, activeDisk->fileIndex <= 0 ? 0x0 : activeDisk->fileIndex - 0x1);
+        }
+        else 
+        {
         }
 	}
 
