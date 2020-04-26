@@ -139,12 +139,12 @@ void playMp3(const char *file)
 	initMp3(file);
 	if(!Inited) 
 	{
-		Playing = true;
+		Playing = false;
+		Inited = true;
 	} 
 	else 
 	{
-		Playing = false;
-		Inited = true;
+		Playing = true;
 	}
 	Break = false;
 

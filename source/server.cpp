@@ -10,6 +10,9 @@
 
 using namespace std;
 
+void reloadIPC(ios_base::openmode iosMode);
+void stopIPC(void);
+
 SpotyIPCRamDisk mainRamDisk;
 fstream f;
 
@@ -39,35 +42,65 @@ void writeRamValues(int c = -1, int fi = -1)
 
 void setupIPC(void) 
 {
-    f.open("sdmc:/tempIPCServer/IPC/DONOTDELETE/serverSPOTY/ramActive.tmpdsk", ios::in | ios::out);
-    if (f.good()) 
+    reloadIPC(ios::out);
+    if (isRamOpened) 
     {
         writeRamValues(0x0, 0x0);
-        isRamOpened = true;
+        stopIPC();
     } 
     else 
     {
         fatalThrow(MAKERESULT(Module_HomebrewAbi, LibnxError_InitFail_FS));
+    }
+}
+
+void reloadIPC(ios_base::openmode iosMode) 
+{
+    f.open("sdmc:/tempIPCServer/IPC/DONOTDELETE/serverSPOTY/ramActive.tmpdsk", iosMode);
+    if (f.good()) 
+    {
+        isRamOpened = true;
+    } 
+    else 
+    {
         isRamOpened = false;
     }
 }
 
 SpotyIPCRamDisk* retrieveIPC(void) 
 {
-    updateRamValues();
-    return &mainRamDisk;
+    reloadIPC(ios::in);
+    if(isRamOpened) 
+    {
+        updateRamValues();
+        stopIPC();
+        return &mainRamDisk;
+    }
+    else 
+    {
+        svcSleepThread(5e+7L);
+        return retrieveIPC();
+    }
 }
 
 void writeToIPC(int currentOP, int fileIndex) 
 {
+    reloadIPC(ios::out);
     if(isRamOpened) 
     {
         writeRamValues(currentOP, fileIndex);
+        stopIPC();
+    }
+    else 
+    {
+        svcSleepThread(5e+7L);
+        writeToIPC(currentOP, fileIndex);
     }
 }
 
 void stopIPC(void) 
 {
     f.close();
+    isRamOpened = false;
 }
 
