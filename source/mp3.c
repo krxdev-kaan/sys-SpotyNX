@@ -22,6 +22,8 @@ u8 *buffData[BUF_COUNT];
 int curBuf = 0;
 bool Playing = true;
 bool Break = false;
+bool Input = false;
+char* InputPacket;
 bool Inited = false;
 #define swapbuf (curBuf = (curBuf + 1) % (BUF_COUNT))
 
@@ -121,6 +123,8 @@ int fillBuf()
 void pauseOrPlay() 
 {
 	Playing = !Playing;
+	for(int curBuf = 0; curBuf < BUF_COUNT/2; curBuf++)
+		fillBuf();
 }
 
 void setBreak() 
@@ -128,13 +132,17 @@ void setBreak()
 	Break = !Break;
 }
 
+void setInput(const char* f) 
+{
+	Input = !Input;
+	InputPacket = f;
+}
+
 void playMp3(const char *file)
 {
-	if(mutexTryLock(&mp3Mutex) == 0) 
-	{
-		setBreak();
-	}
+	//setBreak();
 	mutexLock(&mp3Mutex);
+	//Break = false;
 
 	initMp3(file);
 	if(!Inited) 
@@ -146,7 +154,13 @@ void playMp3(const char *file)
 	{
 		Playing = true;
 	}
-	Break = false;
+
+		if(!Playing) 
+		{
+			for(int curBuf = 0; curBuf < BUF_COUNT/2; curBuf++)
+			fillBuf();
+		}
+	//Break = false;
 
 	u32 released_count = 0;
 	int toPlayCount = 0;
@@ -156,14 +170,23 @@ void playMp3(const char *file)
 	time_t unixTime = time(NULL);
 
 	int lastFill = 1;
-	while (appletMainLoop() && lastFill)
+	while (appletMainLoop())
 	{
-		if(!Playing) 
+		if(!lastFill) 
 		{
-			for(int curBuf = 0; curBuf < BUF_COUNT/2; curBuf++)
-			fillBuf();
+			while(!Input) 
+			{
+				svcSleepThread(9e+7L);
+			}
 		}
-
+		if(Input) 
+		{
+			initMp3(InputPacket);
+            audoutExit();
+			audoutInitialize();
+			audoutStartAudioOut();
+		}
+		Input = false;
 		if (Playing) {
 			for (int curBuf = 0; curBuf < BUF_COUNT / 2; curBuf++)
 			{
@@ -172,10 +195,10 @@ void playMp3(const char *file)
 			}
 		}
 
-		if (Break) 
+		/*if (Break) 
 		{
 			break;
-		}
+		}*/
 
 		for (int curBuf = 0; curBuf < BUF_COUNT / 2 && toPlayCount--; curBuf++)
 			audoutWaitPlayFinish(&audout_released_buf, &released_count, 1000000000L);

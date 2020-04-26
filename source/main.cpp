@@ -60,7 +60,6 @@ extern "C" {
 
     void __attribute__((weak)) __appExit(void)
     {
-        smUnregisterService(smEncodeName("spotynx"));
         fsdevUnmountAll();
         fsExit();
         timeExit();

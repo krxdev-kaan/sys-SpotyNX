@@ -9,6 +9,7 @@ extern "C"
     void playMp3(const char* file);
     void pauseOrPlay();
     void setBreak();
+    void setInput(const char* f);
 
 #ifdef __cplusplus
 }
